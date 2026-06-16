@@ -27,7 +27,6 @@ export async function GET(request: NextRequest) {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Referer': 'https://y2meta.com/',
           },
-          timeout: 8000,
         });
 
         if (!response.ok) continue;
