@@ -14,23 +14,22 @@ export async function GET(request: NextRequest) {
     }
 
     const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const encodedUrl = encodeURIComponent(youtubeUrl);
 
-    // Map quality to y2meta format
+    // Use ssyoutube - fastest service
+    // Map quality to ssyoutube format
     const qualityMap: Record<string, string> = {
-      '4k': '2160',
-      '1080': '1080',
+      '4k': '720',
+      '1080': '720',
       '720': '720',
-      '480': '480',
+      '480': '360',
     };
 
     const mappedQuality = qualityMap[quality] || '720';
 
-    // Redirect to y2mate with quality parameter
-    const downloadUrl = `https://www.y2mate.com/en/download-youtube/${videoId}`;
-
-    // Alternative: Use y2meta for direct downloads
+    // Direct redirect to ssyoutube with quality parameter
     return NextResponse.redirect(
-      `https://y2meta.com/?url=${youtubeUrl}&vt=mp4&q=${mappedQuality}`,
+      `https://ssyoutube.com/?url=${encodedUrl}&quality=${mappedQuality}p`,
       { status: 303 }
     );
   } catch (error) {
