@@ -12,11 +12,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const info = await exec(url, {
+    const infoJson = await exec(url, {
       dumpJson: true,
       noWarnings: true,
     });
 
+    const info = typeof infoJson === 'string' ? JSON.parse(infoJson) : infoJson;
     const videoId = info.id;
     const title = info.title
       .replace(/[^\w\s]/g, '')

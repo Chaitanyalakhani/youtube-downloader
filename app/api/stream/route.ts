@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       getUrl: true,
     });
 
-    const downloadUrl = Array.isArray(result) ? result[0] : result;
+    const downloadUrl = Array.isArray(result) ? result[0] : String(result);
 
     if (!downloadUrl) {
       return NextResponse.json(
