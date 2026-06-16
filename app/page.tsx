@@ -2,11 +2,17 @@
 
 import { useState } from 'react';
 
+interface Quality {
+  name: string;
+  quality: string;
+  downloadUrl: string;
+}
+
 interface VideoInfo {
   videoId: string;
   title: string;
   duration: string;
-  downloadUrl: string;
+  qualities: Quality[];
 }
 
 export default function Home() {
@@ -42,31 +48,10 @@ export default function Home() {
     }
   };
 
-  const handleDownload = async () => {
-    if (!videoInfo) return;
-
+  const handleDownload = (downloadUrl: string) => {
     setDownloading(true);
-    try {
-      const response = await fetch(videoInfo.downloadUrl);
-
-      if (!response.ok) {
-        throw new Error('Download failed');
-      }
-
-      const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = `${videoInfo.title}.mp4`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(downloadUrl);
-      document.body.removeChild(a);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Download failed');
-    } finally {
-      setDownloading(false);
-    }
+    window.location.href = downloadUrl;
+    setTimeout(() => setDownloading(false), 2000);
   };
 
   const formatDuration = (seconds: string) => {
@@ -135,42 +120,35 @@ export default function Home() {
                 {videoInfo.title}
               </h2>
 
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div>
-                  <p className="text-gray-600 text-sm font-semibold mb-1">
-                    Duration
-                  </p>
-                  <p className="text-gray-800 text-lg">
-                    {formatDuration(videoInfo.duration)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-600 text-sm font-semibold mb-1">
-                    Quality
-                  </p>
-                  <p className="text-gray-800 text-lg">Full Quality</p>
+              <div className="mb-6">
+                <p className="text-gray-700 font-semibold mb-3">
+                  Select Download Quality:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {videoInfo.qualities.map((quality) => (
+                    <button
+                      key={quality.quality}
+                      onClick={() => handleDownload(quality.downloadUrl)}
+                      disabled={downloading}
+                      className="p-4 border-2 border-green-500 bg-green-50 text-green-800 font-semibold rounded-lg hover:bg-green-100 hover:border-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                      {downloading ? (
+                        <>
+                          <span className="animate-spin inline-block mr-2">⏳</span>
+                          Downloading...
+                        </>
+                      ) : (
+                        <>
+                          ⬇️ {quality.name}
+                        </>
+                      )}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <button
-                onClick={handleDownload}
-                disabled={downloading}
-                className="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
-              >
-                {downloading ? (
-                  <>
-                    <span className="animate-spin">⏳</span>
-                    Downloading...
-                  </>
-                ) : (
-                  <>
-                    ⬇️ Download Video
-                  </>
-                )}
-              </button>
-
-              <p className="text-gray-500 text-sm text-center mt-4">
-                Downloading full quality video with audio...
+              <p className="text-gray-500 text-sm text-center">
+                Click any quality option to start downloading the video
               </p>
             </div>
           )}
