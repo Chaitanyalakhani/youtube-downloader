@@ -25,57 +25,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let title = `Video ${videoId}`;
+
     try {
       const response = await fetch(
-        `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+        `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
+        { signal: AbortSignal.timeout(5000) }
       );
 
-      if (!response.ok) {
-        throw new Error('Video not found');
+      if (response.ok) {
+        const data = await response.json();
+        title = data.title
+          .replace(/[^\w\s]/g, '')
+          .replace(/\s+/g, '_')
+          .slice(0, 50);
       }
-
-      const data = await response.json();
-      const title = data.title
-        .replace(/[^\w\s]/g, '')
-        .replace(/\s+/g, '_')
-        .slice(0, 50);
-
-      return NextResponse.json({
-        videoId,
-        title: data.title,
-        duration: '0',
-        qualities: [
-          {
-            name: '720p (MP4)',
-            quality: '720',
-            downloadUrl: `/api/stream?videoId=${videoId}&quality=720&title=${title}`,
-          },
-          {
-            name: '480p (MP4)',
-            quality: '480',
-            downloadUrl: `/api/stream?videoId=${videoId}&quality=480&title=${title}`,
-          },
-        ],
-      });
     } catch {
-      return NextResponse.json({
-        videoId,
-        title: `Video ${videoId}`,
-        duration: '0',
-        qualities: [
-          {
-            name: 'Best Quality (MP4)',
-            quality: 'best',
-            downloadUrl: `/api/stream?videoId=${videoId}&quality=best&title=video`,
-          },
-          {
-            name: 'High Quality (MP4)',
-            quality: 'high',
-            downloadUrl: `/api/stream?videoId=${videoId}&quality=high&title=video`,
-          },
-        ],
-      });
+      // If title fetch fails, use default
     }
+
+    return NextResponse.json({
+      videoId,
+      title: title,
+      duration: '0',
+      qualities: [
+        {
+          name: '4K (2160p)',
+          quality: '4k',
+          downloadUrl: `/api/stream?videoId=${videoId}&quality=4k`,
+        },
+        {
+          name: '1080p (Full HD)',
+          quality: '1080',
+          downloadUrl: `/api/stream?videoId=${videoId}&quality=1080`,
+        },
+        {
+          name: '720p (HD)',
+          quality: '720',
+          downloadUrl: `/api/stream?videoId=${videoId}&quality=720`,
+        },
+      ],
+    });
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json(

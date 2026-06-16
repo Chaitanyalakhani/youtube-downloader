@@ -4,7 +4,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const videoId = searchParams.get('videoId');
-    const quality = searchParams.get('quality') || 'best';
+    const quality = searchParams.get('quality') || '720';
 
     if (!videoId) {
       return NextResponse.json(
@@ -15,50 +15,22 @@ export async function GET(request: NextRequest) {
 
     const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
-    const services = [
-      `https://y2meta.com/api/ajaxSearch/index?v=${videoId}`,
-      `https://www.y2mate.com/api/ajaxSearch/index?v=${videoId}`,
-    ];
+    // Map quality to y2meta format
+    const qualityMap: Record<string, string> = {
+      '4k': '2160',
+      '1080': '1080',
+      '720': '720',
+      '480': '480',
+    };
 
-    for (const serviceUrl of services) {
-      try {
-        const response = await fetch(serviceUrl, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Referer': 'https://y2meta.com/',
-          },
-        });
+    const mappedQuality = qualityMap[quality] || '720';
 
-        if (!response.ok) continue;
+    // Redirect to y2mate with quality parameter
+    const downloadUrl = `https://www.y2mate.com/en/download-youtube/${videoId}`;
 
-        const data = await response.json();
-
-        if (data.links?.mp4) {
-          const formats = data.links.mp4;
-
-          let selectedFormat;
-
-          if (quality === '720') {
-            selectedFormat = formats.find((f: any) => f.quality?.includes('720'));
-          } else if (quality === '480') {
-            selectedFormat = formats.find((f: any) => f.quality?.includes('480'));
-          } else if (quality === 'high') {
-            selectedFormat = formats[Math.min(1, formats.length - 1)];
-          } else {
-            selectedFormat = formats[0];
-          }
-
-          if (selectedFormat?.url) {
-            return NextResponse.redirect(selectedFormat.url, { status: 303 });
-          }
-        }
-      } catch {
-        continue;
-      }
-    }
-
+    // Alternative: Use y2meta for direct downloads
     return NextResponse.redirect(
-      `https://y2meta.com/?url=${youtubeUrl}`,
+      `https://y2meta.com/?url=${youtubeUrl}&vt=mp4&q=${mappedQuality}`,
       { status: 303 }
     );
   } catch (error) {
