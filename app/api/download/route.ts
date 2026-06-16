@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import ytdl from 'ytdl-core';
+import { exec } from 'youtube-dl-exec';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,31 +12,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!ytdl.validateURL(url)) {
-      return NextResponse.json(
-        { error: 'Invalid YouTube URL' },
-        { status: 400 }
-      );
-    }
+    const info = await exec(url, {
+      dumpJson: true,
+      noWarnings: true,
+    });
 
-    const videoId = ytdl.getVideoID(url);
-    const info = await ytdl.getInfo(videoId);
-
-    const title = info.videoDetails.title
+    const videoId = info.id;
+    const title = info.title
       .replace(/[^\w\s]/g, '')
       .replace(/\s+/g, '_')
       .slice(0, 50);
 
     return NextResponse.json({
       videoId,
-      title: info.videoDetails.title,
-      duration: info.videoDetails.lengthSeconds,
-      downloadUrl: `/api/stream?videoId=${videoId}&title=${title}`,
+      title: info.title,
+      duration: info.duration.toString(),
+      downloadUrl: `/api/stream?url=${encodeURIComponent(url)}&title=${title}`,
     });
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch video info' },
+      { error: 'Failed to fetch video info. Make sure the URL is correct and the video is accessible.' },
       { status: 500 }
     );
   }

@@ -1,49 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
-import ytdl from 'ytdl-core';
+import { exec } from 'youtube-dl-exec';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const videoId = searchParams.get('videoId');
+    const url = searchParams.get('url');
     const title = searchParams.get('title') || 'video';
 
-    if (!videoId) {
+    if (!url) {
       return NextResponse.json(
-        { error: 'Video ID is required' },
+        { error: 'URL is required' },
         { status: 400 }
       );
     }
 
-    const url = `https://www.youtube.com/watch?v=${videoId}`;
-
-    const info = await ytdl.getInfo(videoId);
-
-    // Get the highest quality format with audio
-    const formats = ytdl.chooseFormat(info.formats, {
-      quality: 'highest',
-      filter: (format) => format.hasAudio && format.hasVideo,
+    const result = await exec(url, {
+      format: 'best[ext=mp4]',
+      quiet: true,
+      noWarnings: true,
+      getUrl: true,
     });
 
-    if (!formats) {
+    const downloadUrl = Array.isArray(result) ? result[0] : result;
+
+    if (!downloadUrl) {
       return NextResponse.json(
-        { error: 'No suitable format found' },
+        { error: 'Could not generate download link' },
         { status: 400 }
       );
     }
 
-    const stream = ytdl(url, { format: formats });
-
-    return new NextResponse(stream as any, {
-      headers: {
-        'Content-Type': 'video/mp4',
-        'Content-Disposition': `attachment; filename="${title}.mp4"`,
-        'Transfer-Encoding': 'chunked',
-      },
-    });
+    return NextResponse.redirect(downloadUrl, { status: 303 });
   } catch (error) {
     console.error('Stream error:', error);
     return NextResponse.json(
-      { error: 'Failed to stream video' },
+      { error: 'Failed to prepare download' },
       { status: 500 }
     );
   }
