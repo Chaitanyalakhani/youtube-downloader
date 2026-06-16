@@ -50,8 +50,8 @@ export default function Home() {
 
   const handleDownload = (downloadUrl: string) => {
     setDownloading(true);
-    window.location.href = downloadUrl;
-    setTimeout(() => setDownloading(false), 2000);
+    window.open(downloadUrl, '_blank');
+    setTimeout(() => setDownloading(false), 1000);
   };
 
   const formatDuration = (seconds: string) => {
