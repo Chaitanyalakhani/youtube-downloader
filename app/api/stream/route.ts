@@ -1,40 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { exec } from 'youtube-dl-exec';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const url = searchParams.get('url');
+    const videoId = searchParams.get('videoId');
     const title = searchParams.get('title') || 'video';
 
-    if (!url) {
+    if (!videoId) {
       return NextResponse.json(
-        { error: 'URL is required' },
+        { error: 'Video ID is required' },
         { status: 400 }
       );
     }
 
-    const result = await exec(url, {
-      format: 'best[ext=mp4]',
-      quiet: true,
-      noWarnings: true,
-      getUrl: true,
-    });
+    const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const downloadServiceUrl = `https://y2meta.com/api/ajaxSearch/index?v=${videoId}`;
 
-    const downloadUrl = Array.isArray(result) ? result[0] : String(result);
+    try {
+      const response = await fetch(downloadServiceUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Referer': 'https://y2meta.com/',
+        },
+      });
 
-    if (!downloadUrl) {
+      if (!response.ok) {
+        throw new Error('Failed to get download links');
+      }
+
+      const data = await response.json();
+
+      if (data.links && data.links.mp4 && data.links.mp4[0]) {
+        const downloadUrl = data.links.mp4[0].url;
+        return NextResponse.redirect(downloadUrl, { status: 303 });
+      }
+
       return NextResponse.json(
-        { error: 'Could not generate download link' },
+        { error: 'No download links available' },
         { status: 400 }
       );
-    }
+    } catch (error) {
+      console.error('Download service error:', error);
 
-    return NextResponse.redirect(downloadUrl, { status: 303 });
+      return NextResponse.redirect(
+        `https://y2meta.com/?url=${youtubeUrl}`,
+        { status: 303 }
+      );
+    }
   } catch (error) {
     console.error('Stream error:', error);
     return NextResponse.json(
-      { error: 'Failed to prepare download' },
+      { error: 'Failed to process download' },
       { status: 500 }
     );
   }
