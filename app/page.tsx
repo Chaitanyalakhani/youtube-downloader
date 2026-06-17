@@ -28,11 +28,14 @@ export default function Home() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/download', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
-      });
+      const response = await fetch(
+        'https://youtube-downloader-backend-production-93ec.up.railway.app/info',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        }
+      );
 
       const data = await response.json();
 
@@ -40,7 +43,31 @@ export default function Home() {
         throw new Error(data.error || 'Failed to fetch video');
       }
 
-      setVideoInfo(data);
+      // Convert backend format to frontend format
+      const qualities = [
+        {
+          name: '4K (2160p)',
+          quality: '2160',
+          downloadUrl: `https://youtube-downloader-backend-production-93ec.up.railway.app/download?url=${encodeURIComponent(url)}&quality=2160`,
+        },
+        {
+          name: '1080p (Full HD)',
+          quality: '1080',
+          downloadUrl: `https://youtube-downloader-backend-production-93ec.up.railway.app/download?url=${encodeURIComponent(url)}&quality=1080`,
+        },
+        {
+          name: '720p (HD)',
+          quality: '720',
+          downloadUrl: `https://youtube-downloader-backend-production-93ec.up.railway.app/download?url=${encodeURIComponent(url)}&quality=720`,
+        },
+      ];
+
+      setVideoInfo({
+        videoId: data.videoId,
+        title: data.title,
+        duration: data.duration,
+        qualities,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
